@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import axios from "axios";
+import NavBar from "@/components/navbar";
 
-const ColorGrid = () => {
+export default function ColorGrid() {
   const [colors, setColors] = useState([]);
   const [lockedColors, setLockedColors] = useState([]);
 
@@ -14,75 +15,77 @@ const ColorGrid = () => {
 
   const fetchColors = async () => {
     try {
+      const inputColors = lockedColors.map((index) => colors[index]);
+      const additionalColors = [
+        [0, 0, 255], // Blue
+        [0, 255, 0], // Green
+        [255, 255, 0], // Yellow
+      ];
       const response = await axios.post(
         "http://localhost:8080/http://colormind.io/api/",
         {
           model: "default",
-          input: lockedColors.map((index) => colors[index]),
+          input: [...inputColors, ...additionalColors],
         }
       );
-      console.log("data:", response.data.results);
+      console.log("Fetched colors:", response.data.result);
       setColors(response.data.result);
     } catch (error) {
       console.error("Failed to fetch colors:", error);
     }
   };
 
-  const handleKeyPress = (event) => {
-    if (event.code === "Space") {
-      fetchColors();
-    }
-  };
-
-  const toggleColorLock = (index) => {
-    const updatedLockedColors = [...lockedColors];
-    if (updatedLockedColors.includes(index)) {
-      updatedLockedColors.splice(updatedLockedColors.indexOf(index), 1);
-    } else {
-      updatedLockedColors.push(index);
-    }
-    setLockedColors(updatedLockedColors);
+  const handleGenerateClick = () => {
+    fetchColors();
   };
 
   useEffect(() => {
-    document.addEventListener("keydown", handleKeyPress);
+    const generateButton = document.getElementById("generate-button");
+    generateButton.addEventListener("click", handleGenerateClick);
     return () => {
-      document.removeEventListener("keydown", handleKeyPress);
+      generateButton.removeEventListener("click", handleGenerateClick);
     };
   }, []);
 
   return (
-    <div className="flex justify-center">
-      <div className="grid grid-cols-6 gap-4">
-        {colors.map((color, index) => {
-          const isLocked = lockedColors.includes(index);
-          return (
-            <div
-              key={index}
-              className={`flex flex-col items-center ${
-                isLocked ? "opacity-50 cursor-not-allowed" : ""
-              }`}
-            >
-              <div
-                className="w-12 h-12 mb-2"
-                style={{
-                  backgroundColor: `rgb(${color[0]}, ${color[1]}, ${color[2]})`,
-                }}
-              ></div>
-              <span>{`rgb(${color[0]}, ${color[1]}, ${color[2]})`}</span>
-              <button
-                className="text-blue-500 underline"
-                onClick={() => toggleColorLock(index)}
-                disabled={lockedColors.length === 5 && !isLocked}
-              >
-                {isLocked ? "Unlock" : "Lock"}
-              </button>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+    <main>
+      <section>
+        <NavBar />
+      </section>
+      <section className="font-righteous flex justify-center text-4xl p-6">
+        <h1>Generate a Colour Palette</h1>
+      </section>
+      <section>
+        <div className="flex justify-center">
+          <div className=" grid grid-rows-5 md:grid md:grid-cols-5">
+            {colors.map((color, index) => {
+              return (
+                <div key={index} className="flex flex-col items-center">
+                  <div
+                    className=" w-96 h-20 md:w-72 md:h-96 mb-2"
+                    style={{
+                      backgroundColor: `rgb(${color[0]}, ${color[1]}, ${color[2]})`,
+                    }}
+                  >
+                    <div className="flex justify-start items-end">
+                      <span className=" text-gray-800 text-base md:text-xl p-2">{`rgb(${color[0]}, ${color[1]}, ${color[2]})`}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+      <section className="flex justify-center">
+        <button
+          id="generate-button"
+          onClick={handleGenerateClick}
+          className="flex justify-center bg-blue-500 rounded-lg py-2 px-4"
+        >
+          Generate
+        </button>
+      </section>
+    </main>
   );
-};
-
-export default ColorGrid;
+}
